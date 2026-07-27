@@ -1,20 +1,35 @@
 ---
 name: refactoring
-description: Behavior-preserving refactoring workflow covering developer-experience (DX) refactors and strict component-first UI refactors. Use when asked to refactor code, improve DX, make code easier to understand, navigate, test, debug, extend, or safely change without altering behavior, or to clean up pages, screens, and routes so visual styles live inside reusable components while external code controls only layout composition. Includes repository discovery, friction mapping, scoped refactor selection, challenge review, minimal implementation, validation, and a "no changes needed" outcome.
+description: Behavior-preserving refactoring workflow for maintainability and developer experience across frontend and backend code, run as an iterative loop with fresh independent reviewer agents until validation passes and the result scores at least 9.5/10 or has no actionable findings. Use when the user invokes `/refactoring`, asks to refactor or clean up code, improve DX or maintainability, polish a task's implementation before finishing, or enforce component-owned styling in UI code. Includes task-scoped discovery, friction mapping, scoped refactor selection, challenge review, characterization tests, minimal implementation, validation, an independent review loop, and a "no changes needed" outcome.
 ---
 
 # Refactoring
 
-Perform a pragmatic, behavior-preserving refactor. Optimize the codebase for the next developer or agent who must understand, change, test, debug, or extend the touched surface. Do not refactor for aesthetics alone. A valid result is: `No code changes needed`.
+## Overview
+
+Perform a pragmatic, behavior-preserving refactor that raises maintainability and developer experience, then prove the result through an iterative loop of fresh independent reviewer agents. The principles are universal for frontend and backend code: clear ownership, small blast radius, proportional tests, honest validation. Do not refactor for aesthetics alone. A valid result is: `No code changes needed`.
+
+Primary use case: at the end of a task, polish the implementation just produced before handing it off. The skill also works when pointed at any file, module, flow, or surface.
+
+Acceptance: validation for the touched surface passes, and the latest fresh independent reviewer either scores the refactored state at least 9.5/10 or explicitly reports no actionable findings.
 
 Two modes share this workflow:
 
-- **DX mode** (default): reduce developer-experience friction on any surface.
-- **UI mode**: everything in DX mode plus the "UI Mode" rules below. Activate it when the target is UI code — pages, screens, routes, components, styling — or when the user asks for UI refactoring.
+- **DX mode** (default): reduce maintainability and developer-experience friction on any surface, frontend or backend.
+- **UI mode**: DX mode plus the "UI Mode" ruleset below, applied only when its activation conditions are met.
+
+## Scope Selection
+
+Default target: the current task's changes — the code produced or modified during the task being finished.
+
+- Identify task-owned files and, when necessary, task-owned hunks inside mixed files. Use the task history and the edits made during the task; do not infer ownership from `git status` alone.
+- The friction to fix must live in the task's surface. Edits may extend into immediately related code when an accepted scope requires it — for example, moving a decision to its owning layer — but keep the blast radius minimal and record why each edit outside the task diff was needed.
+- When the user names an explicit target (files, module, flow, or the whole surface), refactor that instead.
+- If ownership of a file or hunk is genuinely ambiguous, ask the user rather than guessing.
 
 ## Goal
 
-Improve development experience without changing product behavior unless the user explicitly asks for behavior changes.
+Improve maintainability and development experience without changing product behavior unless the user explicitly asks for behavior changes.
 
 Prioritize improvements that make future work:
 
@@ -25,16 +40,18 @@ Prioritize improvements that make future work:
 - Easier to debug: clearer error paths, logs/status visibility when already part of the surface, fewer opaque side effects.
 - Easier to review: focused diffs, reduced incidental complexity, contracts that are obvious from code.
 
-Do not count code movement as a DX win by itself. The improvement must reduce real friction for a plausible next change.
+Do not count code movement as a win by itself. The improvement must reduce real friction for a plausible next change.
 
 ## Operating Rules
 
 - Follow local agent instructions and repository conventions first.
-- Preserve unrelated or user-owned changes. Check `git status --short --branch` before editing.
+- Preserve unrelated or user-owned changes. Check `git status --short --branch` before editing; do not stage, commit, reset, stash, or push unless the user explicitly asks.
 - Preserve public API, database/schema contracts, response formats, error shapes, permissions, security behavior, and business behavior unless the user explicitly asks otherwise.
 - Prefer one small high-value improvement over a broad rewrite.
 - Do not impose a new architecture unless the current structure is clearly blocking comprehension, testing, or safe change.
 - Do not make non-trivial code changes until the challenge checkpoint ends with `PROCEED_WITH_SCOPE` or `NARROW_SCOPE`.
+- Do not finish after non-trivial changes without an acceptance signal from the Independent Review Loop, or an honest incomplete report naming the exact blocker.
+- Never negotiate a score upward, weaken the scoring anchors, or shop for a lenient reviewer. Change the code, or record an evidence-backed rejection of an incorrect finding.
 - Use Quick Mode for small, obvious, local changes where public behavior and contracts are unchanged, the owning layer is clear, and validation is cheap.
 - Before changing production code with meaningful behavior, contract, state, persistence, auth, routing, serialization, or cross-layer risk, lock important existing behavior with a focused characterization test when the behavior is not already covered and the repository has a proportional test layer.
 
@@ -44,15 +61,17 @@ Understand how a future developer would work on this surface before proposing ch
 
 1. Read useful project context: `README.md`, architecture docs, local agent instructions, package scripts, CI config, and relevant tests.
 2. Infer the stack, validation workflow, module boundaries, naming conventions, and existing architecture.
-3. Inspect current diffs and avoid touching unrelated modified files.
+3. Inspect current diffs and separate task-owned changes from unrelated modified files.
 4. Identify the owning layer for the behavior under review.
 5. Trace the normal development path: where a change would start, what files must be understood, what tests/checks prove it, and what mistakes are easy to make.
+
+In end-of-task mode, focus discovery on the task's changed surface and its immediate neighbors; do not audit the whole repository.
 
 When broad code discovery is needed and subagents are available, delegate repository search to a subagent. Ask for a compact evidence map only: `path:line`, symbol or route name, relevant snippet or signature, and why it matters. Verify critical findings before editing.
 
 ## Friction Candidates
 
-Look for high-impact DX friction, especially:
+Look for high-impact maintainability and DX friction, especially:
 
 - The next change requires reading too many unrelated files to find the owner.
 - Business decisions are embedded in transport/UI handlers, controllers, jobs, middleware, ORM/query code, API clients, serializers, validators, or framework-specific code.
@@ -66,13 +85,12 @@ Look for high-impact DX friction, especially:
 - Error, loading, empty, retry, or recovery paths are hard to inspect when they are part of the touched workflow.
 - Code encourages the next feature to copy a confusing or brittle pattern.
 
-UI-specific friction (full rules in "UI Mode"):
+Frontend-specific friction:
 
-- Callers pass `style`, `className`, inline CSS, utility classes, or framework equivalents to change how a component looks.
-- A component's visual definition is split between the component and its call sites.
-- Wrappers override padding, color, border, background, dimensions, radius, shadow, or typography of their children.
-- Local page components duplicate existing design primitives, or a component is an unfinished base whose final look is assembled at call sites.
-- Props mirror CSS directly (`padding`, `background`, `borderRadius`, `shadow`) instead of expressing semantic modes.
+- Components or hooks mix data fetching, business decisions, and presentation so a visual change requires understanding server logic.
+- View state lives at the wrong level: prop drilling for local concerns, or global stores for state owned by one screen.
+- UI code depends on raw server response shapes across many components instead of a stable view boundary.
+- Cosmetic overrides (`style`, `className`, inline CSS, utility classes) passed from callers split a component's visual definition across call sites — see "UI Mode" for the full ruleset and when it applies.
 
 ## Responsibility Boundaries
 
@@ -93,99 +111,13 @@ Heuristics:
 - If code answers "how should this be assembled for this runtime?", keep it in wiring/composition.
 - If a style answers "how does this component look?", keep it inside the component. If it answers "where does it sit among siblings?", keep it outside in a layout wrapper.
 
-## UI Mode
-
-### Core Principle
-
-Keep every component's visual styling inside the component itself. External callers must not pass cosmetic overrides such as `style`, `className`, CSS objects, utility classes, or framework-specific equivalents to change how a component looks.
-
-Default stance: exposing `className`, `style`, or equivalent styling escape hatches from product components is a bad API in most cases. It usually creates a parallel, undocumented design system at call sites and makes components harder to reason about, test, reuse, and safely change.
-
-External code may control only:
-
-- semantic component modes, such as `variant`, `size`, `tone`, `state`, `disabled`, `colorScheme`, `fullWidth`, and similar domain-level props;
-- layout composition through wrapper/layout components that own direction, spacing, alignment, positioning, and grid/flex behavior.
-
-### Bad Practices
-
-Treat these as refactoring targets:
-
-- Passing `style`, `className`, inline CSS, utility classes, or equivalent props to change component appearance.
-- Splitting a component's visual definition between the component and its callers.
-- Letting wrappers override padding, color, border, background, dimensions, radius, shadow, typography, or other cosmetic properties.
-- Using a component as an unfinished base whose final visual design is assembled at the call site.
-- Hardcoding the same visual rule in one place while exposing it as a prop in another.
-- Adding props that mirror CSS directly, such as `padding`, `background`, `borderRadius`, `shadow`, or `borderColor`, when those props affect visual identity rather than layout composition.
-
-### Allowed Exceptions
-
-Use exceptions sparingly. An exception is acceptable only when the API is intentionally low-level, the styling surface is constrained, and the component does not claim ownership of the final visual identity being overridden.
-
-Acceptable exceptions may include:
-
-- layout primitives such as `Stack`, `Grid`, `Box`, `Spacer`, or page shell components whose job is placement, spacing, alignment, or responsive structure;
-- framework or third-party adapters that must pass through host element props for accessibility, portals, animations, measurement, focus management, virtualization, or integration constraints;
-- design-system primitives that are explicitly documented as unfinished building blocks rather than product components;
-- CSS custom properties or slot props when they expose a narrow semantic surface, not arbitrary visual overrides;
-- test-only or instrumentation-only props that do not alter the component's appearance.
-
-When keeping an exception:
-
-- keep the prop name and documentation honest about its scope, such as `containerClassName`, `layoutClassName`, or `slotProps`, instead of a vague styling escape hatch;
-- prevent cosmetic overrides on product components such as cards, buttons, banners, fields, nav items, dialogs, and status views;
-- prefer semantic props before escape hatches;
-- explain the exception in the component or refactor report when it is not obvious from the component category.
-
-### Target Architecture
-
-Build components with clear, semantic APIs. Express visual variants through explicit product-level props such as `variant`, `size`, `tone`, `state`, `colorScheme`, `fullWidth`, `disabled`.
-
-Use layout wrappers for placement concerns only. A wrapper may own direction (row/column), spacing (gap, padding, margin when it describes external layout rhythm), flex/grid behavior, alignment and justification, positioning and responsive placement. Do not use wrapper components to change the visual skin of their children.
-
-In mature codebases, follow the existing component ownership model first. Place extracted components in the repository's established location, such as feature-level component folders, shared UI packages, route-local component directories, or design-system modules. Use a flat `components/` folder only when the repository does not already have a clearer convention.
-
-### UI Workflow
-
-Work sequentially through files. For each file, finish the refactor and validation for that slice before moving to the next one.
-
-1. Inspect the current UI system: nearby components, existing design primitives, layout wrappers, style utilities, and route/page conventions. Check whether a suitable component already exists before creating a new one; prefer extending an existing component with a semantic prop over creating a duplicate.
-2. In the target file, identify style props, class overrides, inline styles, utility-class assembly, local page components, and repeated cosmetic fragments. Separate each style into external layout versus internal visual styling.
-3. Move visual styling into components. Extract local page/screen/route components into the closest established component location. Keep pages, screens, and routes as composition layers.
-4. Keep layout outside via wrapper/layout components with layout-oriented, not cosmetic, APIs.
-5. Simplify component APIs: remove harmful `style`/`className`/override/cosmetic pass-through props, remove unused props, merge vague props into clearer semantic props. Avoid CSS-mirroring props for visual design.
-6. Preserve behavior: keep interactions, accessibility behavior, loading states, empty states, error states, and responsive behavior intact.
-
-### UI Decision Rules
-
-- In disputed cases, choose the stricter component boundary.
-- Do not leave temporary override mechanisms behind.
-- Do not keep a local page component just because it is used once.
-- Do not create a new component when an existing component can be reused or cleanly extended.
-- Do not make the smallest textual diff if it leaves unclear ownership of visual styling.
-- Do not weaken the existing design system. Align with established primitives and naming when they exist.
-- Treat `className`, `style`, and equivalent props as disallowed on product components unless a narrow exception is clearly justified.
-- If a proposed exception would allow arbitrary cosmetic overrides, replace it with semantic variants, slots with constrained styling, or a layout wrapper.
-- Stop and re-scope if the refactor requires broad design decisions, changes visible product behavior, or creates a migration larger than the requested surface.
-
-### UI Validation
-
-- Run the smallest meaningful formatter, typecheck, lint, unit test, component test, build, or browser check for the touched surface.
-- Prefer at least one user-visible validation signal when practical: local browser inspection, Playwright screenshot, Storybook story, component preview, responsive viewport check, or visual regression test.
-- Check important states that the refactor could affect: default, hover/focus/active, disabled, loading, empty, error, success, long text, and narrow viewport.
-- Include accessibility-sensitive states when relevant: focus order, focus ring visibility, labels, roles, aria state, keyboard activation, and contrast.
-- If validation fails, fix it before moving to the next file.
-
-After each file or coherent file group, report briefly: what was wrong before, what visual styling moved inside components, what stayed outside as layout, which props were added/simplified/removed, which local components moved into established locations, why the result is cleaner, and what validation was run.
-
-Expected result: pages, screens, and routes become clean composition layers; components become predictable, reusable, visually self-contained units; the codebase no longer relies on cosmetic style pass-throughs, scattered hardcoded styling, or call-site overrides to assemble final UI.
-
 ## Scope Proposal
 
 Before editing, propose at most 1-3 small high-value scopes. One scope may be a file, endpoint, component, hook, use case, job, module boundary, script, fixture, or business flow.
 
 For each proposed scope, state:
 
-- Concrete friction (DX or UI).
+- Concrete friction.
 - Plausible next developer task that would benefit.
 - Preserved behavior and public contracts.
 - Smallest useful change.
@@ -200,7 +132,7 @@ Use Quick Mode only when all of these are true:
 - The change is small, local, and obviously behavior-preserving.
 - The owning layer and affected files are clear from nearby code.
 - Public API, user-visible behavior, contracts, permissions, persistence, and error shapes are unchanged.
-- The improvement has concrete DX value beyond aesthetics.
+- The improvement has concrete value beyond aesthetics.
 - Validation is cheap through an existing focused test, typecheck, lint, build, or direct runtime check.
 
 Examples:
@@ -210,7 +142,7 @@ Examples:
 - Clarify a script name, README validation command, or test setup note that already reflects existing behavior.
 - Simplify a small conditional or extraction when the resulting owner is more obvious and behavior is covered by existing checks.
 
-In Quick Mode, skip the full scope proposal and challenge checkpoint. Still inspect the affected context, preserve behavior, run proportional validation, and report the concrete friction reduced.
+In Quick Mode, skip the full scope proposal, the challenge checkpoint, and the Independent Review Loop. Still inspect the affected context, preserve behavior, run proportional validation, and report the concrete friction reduced.
 
 Do not use Quick Mode for auth, permissions, persistence, routing, contracts, serialization, cross-layer state, async side effects, generated code, or changes where the primary proof would require broad E2E validation.
 
@@ -235,12 +167,12 @@ Decision rule:
 
 ## Calibration Examples
 
-Good scope (DX):
+Good scope (backend):
 
 - Friction: a route handler validates input, checks permission, formats the response, and makes a domain decision.
 - Better refactor: move the domain decision to an application/domain owner, keep the handler as the request/response boundary, and protect observable response behavior with an existing or new focused test.
 
-Good scope (UI):
+Good scope (frontend):
 
 - Friction: a page assembles a card's final look from utility classes and inline styles at every call site, and a wrapper overrides the card's padding and background.
 - Better refactor: give the card component full ownership of its visual identity, expose a semantic `variant`/`tone` prop for the differing cases, keep the page as layout-only composition, and verify key visual states.
@@ -267,7 +199,7 @@ If subagents are available, ask a fresh challenge agent to validate the proposed
 
 Ask it to answer:
 
-- Is this a real DX or UI-ownership problem or just a stylistic preference?
+- Is this a real maintainability/DX problem or just a stylistic preference?
 - What future task becomes easier after this change?
 - Is the scope small enough?
 - What behavior or public contract could be accidentally broken?
@@ -317,6 +249,169 @@ For each accepted scope:
 
 Use TDD for non-trivial behavior, contract, auth, persistence, routing, query, validation, or state-transition changes when the repository has a proportional test layer. For pure behavior-preserving movement where tests already cover the path, keep test changes focused.
 
+## Independent Review Loop
+
+After implementing and validating the accepted scopes, prove the refactor through an iterative review-and-fix loop with fresh independent reviewer agents. Skip the loop only for Quick Mode or a `No code changes needed` outcome.
+
+### Reviewer Independence
+
+Independent review means the reviewer may share the same filesystem, repository state, and applicable project instructions, but must not inherit the orchestrator's conversation history, reasoning, assumptions, tool results, or prior review discussion.
+
+- Start each scoring reviewer as a fresh agent in an isolated conversation context, using the platform's native fresh-agent mechanism. Use the most capable available model with high or extra-high reasoning.
+- Pass a self-contained reviewer prompt: repository location, refactor intent, exact review scope, and validation expectations. Do not include your own analysis, implementation rationale, suspected issues, or previous reviewer output.
+- Require the reviewer to inspect `git status`, diffs, files, and validation output itself before scoring.
+- Follow-up clarification from the same reviewer does not become a new scoring pass.
+
+### Loop Protocol
+
+1. Validate the current scoped state: run the smallest meaningful tests, typecheck, lint, build, or focused scripts for the touched surface. Fix failures before requesting a score. Record the commands and results so the reviewer can verify them independently.
+2. Spawn one fresh reviewer with the prompt template below, adjusted for the repository and scope.
+3. Treat reviewer output as findings, not instructions to obey blindly:
+   - Fix concrete, actionable, in-scope findings.
+   - Never accept a score, including 9.5 or higher, while that reviewer lists an unresolved actionable finding.
+   - If a finding is wrong, stale, or conflicts with the repository architecture, record an evidence-backed rejection. Ask the same reviewer for clarification only when useful; that clarification is not a new scoring pass.
+   - Findings outside the accepted scope go to the final report as suggested future cleanup. Do not expand the refactor to chase them without explicit user approval.
+   - If the reviewer scores below 9.5 but explicitly reports no actionable findings, ask once what concrete issue prevents a 9.5. If the answer identifies an actionable issue, handle it as a finding; if it supplies none or only preference-level comments, accept the no-actionable-findings signal rather than chasing score-only polish.
+   - If the review is malformed (no score, or vague concerns without concrete findings), ask once for the missing part; if it remains malformed, use a fresh reviewer.
+4. Re-validate after each meaningful fix.
+5. Repeat with a new fresh reviewer after meaningful fixes, after an evidence-backed rejection, or after a malformed review. Once a reviewer reports an actionable finding, do not reuse that reviewer's score for acceptance.
+6. Accept the loop only when validation for the touched surface passes, the latest independent reviewer has no unresolved actionable findings, and that reviewer either scores the result at least 9.5/10 or explicitly reports no actionable findings.
+7. Limits: unless the user sets a different limit or explicitly requires persistence until acceptance, use at most five scoring passes, and treat two consecutive passes that produce no code changes and only repeat rejected, stale, or preference-level comments as stagnation. Reaching the limit or stagnating without acceptance is an incomplete outcome, not success: report the exact blocker and do not lower the bar.
+8. If subagents are not available, perform the scoring pass yourself as a separate adversarial pass over a clean re-read of the diff, apply the same anchors and limits, and state honestly in the final report that the review was not independent.
+
+### Scoring Anchors
+
+- **10.0:** Behavior is demonstrably preserved, the targeted friction is removed, the result is easy to inherit, no actionable improvements remain in scope, and validation evidence is complete and green.
+- **9.5:** Behavior is preserved and no actionable findings remain; only clearly optional or subjective nits may remain; validation evidence is sufficient and green.
+- **Below 9.5:** At least one actionable finding remains — a behavior or contract risk, friction not actually reduced, unclear ownership after the refactor, new unjustified complexity, scope creep, missing high-value characterization coverage, or missing/failing validation evidence.
+
+The score summarizes the review; it never overrides concrete findings or red validation.
+
+### Reviewer Prompt Template
+
+Use a concise prompt like this, adjusted for the repository and scope:
+
+```text
+Review this behavior-preserving refactor independently. You have no parent conversation history; do not rely on any prior chat or previous reviewer output. Derive findings only from the repository state and the command/tool output you inspect yourself. Stay read-only: do not edit, stage, commit, reset, stash, or push.
+
+Refactor intent: <one sentence: the friction targeted and the claim that behavior is preserved; note if UI mode rules apply>
+Review scope:
+- Files/hunks owned by this refactor: <paths, untracked files, mixed-file hunks to include>
+- Excluded unrelated active changes: <paths or hunks to ignore, if any>
+Validation evidence: <commands the orchestrator ran and their results; rerun what you need>
+
+First reconstruct the change: what the refactored code owns, its important control or data flow, what changed structurally, and what observable behavior must be unchanged. If you cannot explain a part after inspecting reasonable context, identify the exact symbol or flow and the concrete future change this ambiguity makes risky.
+
+Then hunt, in order of severity:
+1. Behavior or contract changes introduced by the refactor: public API, response shapes, error paths, permissions, persistence, ordering/timing, and user-visible UI states.
+2. Whether the claimed friction is actually reduced: would a plausible next change now be easier, with one obvious owner? Or did code merely move?
+3. New unjustified complexity: added indirection, patterns, or abstractions without current value.
+4. Scope discipline: unrelated edits, or churn beyond the stated scope.
+5. Test and validation evidence: characterization coverage proportional to the risk; tests that would fail for a plausible regression; no mocks that fake the outcome under test.
+6. If UI mode applies: cosmetic overrides remaining at call sites, visual styling ownership, semantic prop APIs, layout-only wrappers, and important visual/accessibility states.
+
+Base findings on repository evidence. Do not impose a new architecture, demand reuse for uniformity, or report preferences as violations. Report actionable findings first, ordered by severity, with file/line references and the concrete maintenance or user impact. If there are none, say so clearly. Then give a brief understanding summary of the refactored surface.
+
+Score 10 only when behavior is preserved, the targeted friction is removed, and validation evidence is complete; 9.5 when no actionable findings remain and only optional nits may remain; below 9.5 when an actionable finding remains or validation evidence is missing/failing. End with a numeric score from 1 to 10 and state what concrete issue prevents a 9.5, if anything.
+```
+
+## UI Mode
+
+### When UI Mode Applies
+
+Activate UI mode on top of DX mode when:
+
+- the user explicitly asks for UI or styling refactoring, component cleanup, or invokes the skill on UI code with that intent; or
+- the accepted scope is UI code in a repository whose conventions already favor component-owned styling.
+
+When the repository's established convention is call-site styling — for example, Tailwind-style utility classes composed in pages — do not impose the strict policy wholesale. Follow repository conventions first, and treat cosmetic-override friction as a candidate to raise in the scope proposal, with the migration cost stated honestly.
+
+### Core Principle
+
+Keep every component's visual styling inside the component itself. External callers must not pass cosmetic overrides such as `style`, `className`, CSS objects, utility classes, or framework-specific equivalents to change how a component looks.
+
+Default stance: exposing `className`, `style`, or equivalent styling escape hatches from product components is a bad API in most cases. It usually creates a parallel, undocumented design system at call sites and makes components harder to reason about, test, reuse, and safely change.
+
+External code may control only:
+
+- semantic component modes, such as `variant`, `size`, `tone`, `state`, `disabled`, `colorScheme`, `fullWidth`, and similar domain-level props;
+- layout composition through wrapper/layout components that own direction, spacing, alignment, positioning, and grid/flex behavior.
+
+### Bad Practices
+
+Treat these as refactoring targets:
+
+- Passing `style`, `className`, inline CSS, utility classes, or equivalent props to change component appearance.
+- Splitting a component's visual definition between the component and its callers.
+- Letting wrappers override padding, color, border, background, dimensions, radius, shadow, typography, or other cosmetic properties.
+- Using a component as an unfinished base whose final visual design is assembled at the call site.
+- Hardcoding the same visual rule in one place while exposing it as a prop in another.
+- Adding props that mirror CSS directly, such as `padding`, `background`, `borderRadius`, `shadow`, or `borderColor`, when those props affect visual identity rather than layout composition.
+
+### Allowed Exceptions
+
+Use exceptions sparingly. An exception is acceptable only when the API is intentionally low-level, the styling surface is constrained, and the component does not claim ownership of the final visual identity being overridden.
+
+Acceptable exceptions may include:
+
+- layout primitives such as `Stack`, `Grid`, `Box`, `Spacer`, or page shell components whose job is placement, spacing, alignment, or responsive structure;
+- framework or third-party adapters that must pass through host element props for accessibility, portals, animations, measurement, focus management, virtualization, or integration constraints;
+- design-system primitives that are explicitly documented as unfinished building blocks rather than product components;
+- CSS custom properties or slot props when they expose a narrow semantic surface, not arbitrary visual overrides;
+- test-only or instrumentation-only props that do not alter the component's appearance.
+
+When keeping an exception:
+
+- keep the prop name and documentation honest about its scope, such as `containerClassName`, `layoutClassName`, or `slotProps`, instead of a vague styling escape hatch;
+- prevent cosmetic overrides on product components such as cards, buttons, banners, fields, nav items, dialogs, and status views;
+- prefer semantic props before escape hatches;
+- explain the exception in the component or refactor report when it is not obvious from the component category.
+
+### Target Architecture
+
+Build components with clear, semantic APIs. Express visual variants through explicit product-level props such as `variant`, `size`, `tone`, `state`, `colorScheme`, `fullWidth`, `disabled`.
+
+Implement each component as a self-contained visual unit that owns its surface, padding, radius, typography, color, borders, shadows, sizing, and state styling.
+
+Use layout wrappers for placement concerns only. A wrapper may own direction (row/column), spacing (gap, padding, margin when it describes external layout rhythm), flex/grid behavior, alignment and justification, positioning and responsive placement. Do not use wrapper components to change the visual skin of their children.
+
+In mature codebases, follow the existing component ownership model first. Place extracted components in the repository's established location, such as feature-level component folders, shared UI packages, route-local component directories, or design-system modules. Use a flat `components/` folder only when the repository does not already have a clearer convention.
+
+### UI Workflow
+
+Within each accepted scope, work sequentially through its files. For each file, finish the refactor and validation for that slice before moving to the next one.
+
+1. Inspect the current UI system: nearby components, existing design primitives, layout wrappers, style utilities, and route/page conventions. Check whether a suitable component already exists before creating a new one; prefer extending an existing component with a semantic prop over creating a duplicate.
+2. In the target file, identify style props, class overrides, inline styles, utility-class assembly, local page components, and repeated cosmetic fragments. Separate each style into external layout versus internal visual styling.
+3. Move visual styling into components. Extract local page/screen/route components into the closest established component location. Keep pages, screens, and routes as composition layers.
+4. Keep layout outside via wrapper/layout components with layout-oriented, not cosmetic, APIs.
+5. Simplify component APIs: remove harmful `style`/`className`/override/cosmetic pass-through props, remove unused props, merge vague props into clearer semantic props. Avoid CSS-mirroring props for visual design.
+6. Preserve behavior: do not change product behavior, data flow, permissions, routing, persistence, or business logic unless required to preserve the UI during refactoring. Keep interactions, accessibility behavior, loading states, empty states, error states, and responsive behavior intact.
+
+### UI Decision Rules
+
+- In disputed cases, choose the stricter component boundary.
+- Do not leave temporary override mechanisms behind.
+- Do not keep a local page component just because it is used once.
+- Do not create a new component when an existing component can be reused or cleanly extended.
+- Do not make the smallest textual diff if it leaves unclear ownership of visual styling.
+- Do not weaken the existing design system. Align with established primitives and naming when they exist.
+- Treat `className`, `style`, and equivalent props as disallowed on product components unless a narrow exception is clearly justified.
+- If a proposed exception would allow arbitrary cosmetic overrides, replace it with semantic variants, slots with constrained styling, or a layout wrapper.
+- Stop and re-scope if the refactor requires broad design decisions, changes visible product behavior, or creates a migration larger than the requested surface.
+
+### UI Validation
+
+- Run the smallest meaningful formatter, typecheck, lint, unit test, component test, build, or browser check for the touched surface.
+- Prefer at least one user-visible validation signal when practical: local browser inspection, Playwright screenshot, Storybook story, component preview, responsive viewport check, or visual regression test.
+- Check important states that the refactor could affect: default, hover/focus/active, disabled, loading, empty, error, success, long text, and narrow viewport.
+- Include accessibility-sensitive states when relevant: focus order, focus ring visibility, labels, roles, aria state, keyboard activation, and contrast.
+- If validation fails, fix it before moving to the next file.
+
+After each file or coherent file group, report briefly: what was wrong before, what visual styling moved inside components, what stayed outside as layout, which props were added/simplified/removed, which local components moved into established locations, why the result is cleaner, and what validation was run.
+
+Expected result: pages, screens, and routes become clean composition layers; components become predictable, reusable, visually self-contained units; the codebase no longer relies on cosmetic style pass-throughs, scattered hardcoded styling, or call-site overrides to assemble final UI.
+
 ## What Counts As A Win
 
 Prefer changes with observable developer value:
@@ -345,8 +440,10 @@ If the only benefit is "this looks cleaner", do not proceed.
 - Letting infrastructure/framework details leak into pure business logic.
 - Creating a new component when an existing one can be reused or cleanly extended.
 - Weakening an existing design system with parallel primitives or naming.
-- Renaming or moving code when it makes git history harder to follow without enough DX payoff.
+- Renaming or moving code when it makes git history harder to follow without enough payoff.
 - Adding docs that mirror code instead of making setup, validation, ownership, or durable decisions clearer.
+- Expanding the refactor beyond the accepted scope to chase a higher review score.
+- Treating a reached score as success while validation is red or an actionable finding is unresolved.
 
 ## Pre-Final Review
 
@@ -358,6 +455,7 @@ Review the diff as a fresh reviewer:
 - Confirm public contracts are unchanged.
 - Confirm characterization coverage was added, already existed, or was intentionally skipped with a reason.
 - Confirm tests/checks pass, or clearly explain what could not be run and why.
+- Confirm the Independent Review Loop ended with an acceptance signal, or the incomplete outcome is honestly recorded.
 - Confirm documentation changes are only made when durable architecture, setup, operations, contracts, user flows, or engineering decisions changed.
 
 If the refactor no longer looks worth it, revert only your own changes and report `No useful refactor found`.
@@ -366,16 +464,16 @@ If the refactor no longer looks worth it, revert only your own changes and repor
 
 Report concisely:
 
-- Overall result: no changes, changes made, or partial validation.
-- Mode used: DX, UI, or both.
-- Scopes inspected.
+- Overall result: no changes, changes made, or incomplete.
+- Mode used: DX, or DX plus UI mode.
+- Scopes inspected and scopes changed.
 - Challenge checkpoint decision.
-- Scopes changed.
 - Friction reduced and why it matters for the next change.
 - Public contracts preserved.
 - Characterization coverage added, reused, or intentionally skipped.
-- Primary signal status.
-- Secondary signal status: tests/checks run.
-- Docs status.
-- Remaining risks or suggested future cleanup.
+- Review loop outcome: number of scoring passes, final score, and the acceptance signal (score at least 9.5/10, no actionable findings, or both) — or the exact blocker if incomplete.
+- Findings intentionally rejected, with the evidence.
+- Out-of-scope findings recorded as suggested future cleanup.
+- Validation commands and results.
+- Remaining risks.
 - Suggested commit message when changes are ready.

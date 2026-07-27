@@ -1,4 +1,4 @@
 interface:
   display_name: "Refactoring"
-  short_description: "Behavior-preserving DX and component-first UI refactors."
-  default_prompt: "Use $refactoring to improve this codebase's developer experience or UI architecture without changing behavior."
+  short_description: "Loop-reviewed refactors for maintainability and DX."
+  default_prompt: "Use $refactoring to polish the current task's implementation for maintainability and DX without changing behavior, looping fresh independent review until it scores at least 9.5/10 or has no actionable findings."
