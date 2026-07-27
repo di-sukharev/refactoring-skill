@@ -1,4 +1,4 @@
-# refactoring-skills
+# refactoring-skill
 
 Agent skills for pragmatic, behavior-preserving refactoring. The skill format (`SKILL.md` with `name`/`description` frontmatter) works with Claude Code, OpenAI Codex CLI, and other runtimes that support agent skills.
 
@@ -25,17 +25,17 @@ Copy the skill directory into your agent's skills folder.
 Claude Code:
 
 ```sh
-git clone https://github.com/di-sukharev/refactoring-skills.git
+git clone https://github.com/di-sukharev/refactoring-skill.git
 mkdir -p ~/.claude/skills
-cp -R refactoring-skills/refactoring ~/.claude/skills/
+cp -R refactoring-skill/refactoring ~/.claude/skills/
 ```
 
 Codex CLI:
 
 ```sh
-git clone https://github.com/di-sukharev/refactoring-skills.git
+git clone https://github.com/di-sukharev/refactoring-skill.git
 mkdir -p ~/.codex/skills
-cp -R refactoring-skills/refactoring ~/.codex/skills/
+cp -R refactoring-skill/refactoring ~/.codex/skills/
 ```
 
 To update, pull the repo and copy again.
