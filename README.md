@@ -38,7 +38,9 @@ mkdir -p ~/.codex/skills
 cp -R refactoring-skill/refactoring ~/.codex/skills/
 ```
 
-To update, pull the repo and copy again.
+Codex also reads `~/.agents/skills` and, per project, `.agents/skills`; Claude Code also reads a project's `.claude/skills`. Copy into whichever scope you want the skill in, and copy again to update.
+
+Or hand the repository to your agent and ask it to install the skill into your skills directory — the layout is the standard one, so it can place the folder itself.
 
 ## Use
 
