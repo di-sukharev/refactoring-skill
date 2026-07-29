@@ -12,7 +12,7 @@ How it works:
 
 - **Scope** — defaults to the current task's changes; picks 1–3 small high-value scopes; an explicit `No code changes needed` outcome is valid.
 - **Safety** — a challenge checkpoint gates non-trivial edits, characterization tests lock existing behavior, public contracts stay intact.
-- **DX mode** (default) — clear ownership boundaries, one owner per decision, proportional tests, smaller blast radius, for any stack.
+- **DX mode** (default) — clear ownership boundaries, one owner per decision, decoupling over DRY, proportional tests, smaller blast radius, for any stack.
 - **UI mode** (gated) — strict component-first styling on top of DX mode: visual styling lives inside components, callers control only semantic props (`variant`, `size`, `tone`, …) and layout composition. Applies when asked for UI refactoring or when the repo's conventions already favor component-owned styling; it does not fight house conventions like utility-class styling.
 - **Independent review loop** — after implementation, fresh independent reviewer agents (no orchestrator context) score the result; the loop fixes actionable findings and repeats until validation passes and a reviewer scores at least **9.5/10** or reports no actionable findings. At most five scoring passes; stagnation is reported as an incomplete outcome, never as success.
 

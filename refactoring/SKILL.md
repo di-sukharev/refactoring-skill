@@ -11,7 +11,7 @@ Two modes: **DX** (default) and **UI** — DX plus the "UI Mode" ruleset below, 
 
 ## Worth Doing?
 
-A refactor is worth doing only when a plausible next developer task becomes easier: to understand (clear ownership, fewer hidden assumptions), navigate (predictable boundaries, names, entrypoints), change (small blast radius, one owner per decision), test (behavior reachable through proportional stable tests), debug (clear error paths, fewer opaque side effects), or review (focused diffs, obvious contracts). Moving code around or making it look cleaner is not value; when that is all there is, report `No code changes needed`.
+A refactor is worth doing only when a plausible next developer task becomes easier: to understand (clear ownership, fewer hidden assumptions), navigate (predictable boundaries, names, entrypoints), change (small blast radius, each decision in its owning layer), test (behavior reachable through proportional stable tests), debug (clear error paths, fewer opaque side effects), or review (focused diffs, obvious contracts). Moving code around or making it look cleaner is not value; when that is all there is, report `No code changes needed`.
 
 ## Rules
 
@@ -19,6 +19,7 @@ A refactor is worth doing only when a plausible next developer task becomes easi
 - Preserve behavior and contracts: public API, schemas, response formats, error shapes, permissions, security, business behavior. Behavior changes happen only when the user explicitly asks — otherwise split them off as a separate product task.
 - Keep the worktree safe: check `git status --short --branch` first; leave unrelated changes alone; stage, commit, stash, reset, or push only when the user asks.
 - Prefer one small high-value improvement over a broad rewrite; keep the existing architecture unless it clearly blocks comprehension, testing, or safe change.
+- Prefer decoupling over DRY: unify duplicated code only when its copies must always agree; when they change for different reasons, leave them duplicated rather than binding them to a shared abstraction.
 - Non-trivial edits start only after the challenge checkpoint approves, and finish only with the review-loop acceptance signal or an honest incomplete report.
 - The review score moves only through code changes or evidence: fix findings, or record an evidence-backed rejection.
 
@@ -35,7 +36,7 @@ Read enough to work like the next developer: project docs and agent instructions
 - The next change needs too many unrelated files, or has several competing owners.
 - Business decisions sit in transport or infrastructure code: handlers, controllers, jobs, middleware, ORM/queries, API clients, serializers.
 - One file mixes orchestration, persistence, formatting, permissions, external calls, and state changes.
-- The same decision or validation rule is duplicated, so one future edit means several places.
+- The same decision or validation rule is duplicated across places that must always agree, so one future edit means several places.
 - Hidden dependencies — time, randomness, env, globals, singletons, network, filesystem — block local reasoning and tests.
 - Important behavior is only provable through slow end-to-end paths; setup, scripts, or fixtures obscure the intended validation path.
 - Error, loading, empty, and retry paths are hard to inspect where they are part of the touched flow.
@@ -57,12 +58,13 @@ Calibration:
 - A handler validates, checks permission, formats, and makes a domain decision → move only the decision to its owner; the handler stays the request/response boundary.
 - A 900-line service → pick one scenario or repeated decision inside it; "split it into controllers, repositories, and factories because it is big" is not a scope.
 - A long component whose sections map cleanly to product states with an obvious owner → leave it; size alone is not friction.
+- Two flows that look alike but change for different reasons → keep them apart; resemblance alone is not friction.
 - A page assembles a card's look from utility classes while a wrapper overrides its padding → the card owns its look behind a `variant`, the page keeps layout only (when the UI gate matches).
 - The refactor would expose a user-observable inconsistency → preserve current behavior and split a product task.
 
 ## Quick Mode
 
-Small, local, obviously behavior-preserving changes with a clear owner and cheap validation — a tooling-verified rename, a fixture moved next to its tests, a simpler conditional covered by existing checks — skip the proposal, checkpoint, and review loop: inspect context, change, validate, report the friction reduced. Auth, permissions, persistence, routing, contracts, serialization, cross-layer state, async side effects, and generated code always take the full pipeline.
+Small, local, obviously behavior-preserving changes with a clear owner and cheap validation — a tooling-verified rename, a fixture moved next to its tests, a simpler conditional covered by existing checks — skip the proposal, checkpoint, and review loop: inspect context, change, validate, report the friction reduced. Auth, permissions, persistence, routing, contracts, serialization, cross-layer state, async side effects, generated code, and merging duplicated code into a shared abstraction always take the full pipeline.
 
 ## Challenge Checkpoint
 
@@ -74,7 +76,7 @@ Before editing production code with meaningful behavior, lock current behavior w
 
 ## Implement
 
-For each accepted scope: make the minimal connected diff; place each decision in its owning layer — fix it where it is made, not in the children; improve names, boundaries, fixtures, or scripts only where they serve the accepted friction; add dependencies, interfaces, or patterns only when they pay for themselves in this change; finish what you start, with churn and leftover TODOs kept out of the diff. Validate each slice with the most relevant project checks (from scripts, docs, Makefile, CI); use TDD where behavior-adjacent changes have a proportional test layer.
+For each accepted scope: make the minimal connected diff; place each decision in its owning layer — fix it where it is made, not in the children; improve names, boundaries, fixtures, or scripts only where they serve the accepted friction; add dependencies, interfaces, patterns, or shared abstractions only when they pay for themselves in this change; finish what you start, with churn and leftover TODOs kept out of the diff. Validate each slice with the most relevant project checks (from scripts, docs, Makefile, CI); use TDD where behavior-adjacent changes have a proportional test layer.
 
 ## Independent Review Loop
 
@@ -106,9 +108,9 @@ Validation evidence: <commands run and their results; rerun what you need>
 
 First reconstruct the change: what the refactored code owns, its important flow, what changed structurally, what observable behavior must stay unchanged. If a part resists explanation after reasonable context, name the exact symbol and the future change this ambiguity makes risky.
 
-Hunt in severity order: (1) behavior or contract changes introduced — API, response shapes, error paths, permissions, persistence, ordering, UI states; (2) whether the claimed friction actually got easier, with one obvious owner per decision, or code merely moved; (3) new indirection or patterns without current value; (4) edits beyond the stated scope; (5) test evidence — proportional characterization coverage that would fail on a plausible regression, with no mocks faking the outcome under test; (6) if UI mode applies — remaining call-site cosmetic overrides, visual ownership, semantic props, layout-only wrappers, key visual and accessibility states.
+Hunt in severity order: (1) behavior or contract changes introduced — API, response shapes, error paths, permissions, persistence, ordering, UI states; (2) whether the claimed friction actually got easier, with each decision in its owning layer, or code merely moved; (3) new indirection, patterns, or coupling without current value — including shared abstractions binding code that changes for different reasons; (4) edits beyond the stated scope; (5) test evidence — proportional characterization coverage that would fail on a plausible regression, with no mocks faking the outcome under test; (6) if UI mode applies — remaining call-site cosmetic overrides, visual ownership, semantic props, layout-only wrappers, key visual and accessibility states.
 
-Base findings on repository evidence; keep the existing architecture as the baseline rather than imposing a new one or demanding reuse for uniformity; report preferences as optional nits, not violations. Actionable findings first, with file/line and concrete impact; say clearly if there are none; then a brief understanding summary. Score 10 = friction removed, behavior preserved, complete evidence; 9.5 = no actionable findings, only optional nits; below 9.5 = an actionable finding remains or evidence is missing/failing. End with the numeric score and the concrete issue blocking 9.5, if any.
+Base findings on repository evidence; keep the existing architecture as the baseline rather than imposing a new one, demanding reuse for uniformity, or pushing to merge look-alike code that changes for different reasons; report preferences as optional nits, not violations. Actionable findings first, with file/line and concrete impact; say clearly if there are none; then a brief understanding summary. Score 10 = friction removed, behavior preserved, complete evidence; 9.5 = no actionable findings, only optional nits; below 9.5 = an actionable finding remains or evidence is missing/failing. End with the numeric score and the concrete issue blocking 9.5, if any.
 ```
 
 ## UI Mode
@@ -121,7 +123,7 @@ Styling escape hatches (`className`, `style`, cosmetic pass-throughs, CSS-mirror
 
 Workflow, per accepted scope, file by file — finish and validate each slice before the next:
 
-1. Learn the existing UI system first; extend an existing component with a semantic prop before creating a new one.
+1. Learn the existing UI system first; extend an existing component with a semantic prop when the new use is a variation of that component and changes for the same reasons; otherwise give the new use its own component.
 2. Classify every style in the file: internal look vs external placement.
 3. Move looks into components; extract local page components into the repository's established component location (a flat `components/` only when no clearer convention exists); keep pages, screens, and routes as composition layers.
 4. Keep placement in layout wrappers with layout-oriented APIs.
