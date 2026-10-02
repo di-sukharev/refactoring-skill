@@ -1,6 +1,6 @@
-# Refactoring
+# Рефакторинг
 
-Рефакторинг часто только переставляет код, а следующая задача проще не становится. Refactoring сохраняет поведение и меняет код, только если следующая задача станет проще. Новый агент без истории чата сначала оспаривает план, а готовый код проверяет [Loop Code Review](https://github.com/di-sukharev/loop-code-review-skill).
+Рефакторинг чистит код от легаси, лишних абстракций, слабых тестов и других жидких реализаций. Поведение программы при этом не меняется. Перед правками новый агент без истории чата оспаривает план, а после правок код проверяет [Ревью в цикле](https://github.com/di-sukharev/loop-code-review-skill).
 
 ## Установка
 
@@ -14,13 +14,13 @@ https://github.com/di-sukharev/loop-code-review-skill
 
 ## Запуск
 
-Напишите `/refactoring` в чате, где агент писал код. В Codex напишите `$refactoring`. Чтобы улучшить другой код, допишите файл, модуль или сценарий. Для интерфейса можно попросить перенести стили внутрь компонентов.
+Напишите `отрефактори` в чате, где агент писал код. Чтобы улучшить другой код, допишите файл, модуль или сценарий. Для интерфейса можно попросить перенести стили внутрь компонентов.
 
 ## Другие скиллы
 
-- [Code Scout](https://github.com/di-sukharev/code-scout-skill) поручает поиск кода дешёвой модели.
-- [Orchestration](https://github.com/di-sukharev/orchestration-skill) поручает чтение и написание кода дешёвой модели.
-- [Loop Tasks](https://github.com/di-sukharev/loop-tasks-skill) запускает для каждой задачи нового агента с чистым контекстом.
-- [Loop Code Review](https://github.com/di-sukharev/loop-code-review-skill) отдаёт код новому ревьюеру без истории чата.
+- [Code Scout](https://github.com/di-sukharev/code-scout-skill) — дешёвый саб-агент ищет нужный код и приносит его на тарелке.
+- [Orchestration](https://github.com/di-sukharev/orchestration-skill) — дорогая модель аутсорсит чтение и написание кода дешёвым саб-агентам.
+- [Loop Tasks](https://github.com/di-sukharev/loop-tasks-skill) — каждую задачу из списка делает новый саб-агент с чистым контекстом.
+- [Ревью в цикле](https://github.com/di-sukharev/loop-code-review-skill) — саб-агенты без контекста в цикле находят и исправляют проблемы в изменениях.
 
 [Инструкция для агента](refactoring/SKILL.md) · [Лицензия MIT](LICENSE)
