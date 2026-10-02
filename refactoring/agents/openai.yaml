@@ -1,4 +1,4 @@
 interface:
   display_name: "Refactoring"
-  short_description: "Loop-reviewed refactors for maintainability and DX."
-  default_prompt: "Use $refactoring to polish the current task's implementation for maintainability and DX without changing behavior, looping fresh independent review until it scores at least 9.5/10 or has no actionable findings."
+  short_description: "A refactor that makes the next task easier"
+  default_prompt: "Use $refactoring to make this task's code easier to change without changing its behavior."
