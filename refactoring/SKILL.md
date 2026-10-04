@@ -72,7 +72,7 @@ A change is quick if it is local and not sensitive, has a clear owner and cheap 
 The result is `No code changes needed`, changes, or incomplete. It is incomplete if the review status is open or a scope is unfinished.
 Report the result, the removed friction, the next task that becomes easier, the kept contracts, and the behavior tests.
 Also report the challenge decisions, rejected findings with reasons, checks, human checks, unresolved issues, and other problems for later.
-Also report the cost: agents, rounds, models, efforts, and agent tokens if known.
+Also report the cost: agents, rounds, models, and efforts.
 
 ## UI mode
 
