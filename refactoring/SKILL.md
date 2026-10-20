@@ -1,68 +1,40 @@
 ---
 name: refactoring
 description: >-
-  Refactors code without changing behavior to make the codebase easier to
-  maintain. Use when the user asks to refactor or clean up code, or after a
-  large implementation task when the changed code needs clearer structure
-  or alignment with project practices.
+  Make code easier to read, change, debug, and test without changing external
+  behavior. Use for refactoring, cleanup, or improving code after implementation.
 ---
-
-Make code easier to understand, change, test, and debug without changing behavior.
-Default to code changed by the current task, or the file, module, or flow the user names.
-Follow project rules. Use English with agents and the user's language with the user.
 
 ## Scope
 
-Name the concrete maintenance problem and a plausible next task that becomes easier.
-Choose the smallest connected change that solves it. No code change is a valid result.
-Size and similarity alone do not justify a refactor.
-Preserve public APIs, schemas, response and error formats, permissions, security, and business rules.
-Report behavior changes as separate work unless the user requests them.
-Keep the existing architecture unless it prevents a clear, testable solution.
+Refactor the requested code. Otherwise, use active Git changes, including staged, unstaged, and untracked files. If there are none, inspect the project.
 
-Ask a fresh subagent without chat history to challenge changes beyond a local mechanical edit and all behavior risks listed below.
-Choose a capable model and effort for the risk. Follow the user's model and effort choices.
-Give it the repository path, target code, proposed change, constraints, and criteria below.
-Ask it to check the code, identify what becomes easier, find a smaller solution, and name risks and behavior tests.
-Have the challenger read project rules and report findings with file:line evidence.
-It must not edit files, run checks, start agents, or use a browser.
-Use its findings to keep, narrow, or reject the scope.
+For project-wide work, inspect source files over 1000 lines first, then remaining files over 500, 200, and 100. Exclude generated and third-party code. Size determines where to inspect first, not a required file length.
 
-## Refactor
+Skip changes without a concrete DX benefit: easier reading, modification, debugging, or testing.
+Change architecture when it makes the code clearer and easier to test. Preserve user-visible behavior and external API contracts. Always report discovered bugs separately.
 
-Read the target and affected code. Use code-scout for broad research in unfamiliar code when available.
-If loop-code-review is required but unavailable, stop before editing and report the missing dependency.
-Before edits that can affect behavior, run focused tests of current contracts. Add missing tests for real risks and require passing results.
-Use existing checks for mechanical moves and renames.
-Require passing behavior tests for changes to security, stored data, contracts, routing, serialization, shared state, asynchronous effects, or generated code.
-This also applies to mechanical edits. If coverage is limited, use the fastest reliable check and state what remains unverified.
-Report known bugs separately rather than adding tests that require them.
+## Good code
 
-Keep business decisions with their owner. Keep input, output, and external access at their boundaries.
-Separate mixed responsibilities where they make changes difficult.
-Make time, randomness, configuration, network, and file access explicit where hidden dependencies block tests.
-Merge duplicate rules that must always agree. Keep similar code separate when it changes for different reasons.
-Write clear code. Prefer declarative code, clear names, and existing project patterns.
-Add dependencies and abstractions when they simplify the current change.
-Remove dead code, debug output, temporary files, and obsolete fallbacks. Preserve compatibility that callers or stored data still need.
-Update setup, fixtures, scripts, and documentation where the refactor affects them.
-Finish each connected change and run affected checks. Fix failures caused by the refactor and report unrelated failures.
-If the scope must grow, reassess its value and risks before extending it.
+- Each function should do one thing. Extract long blocks into functions, modules, or services named after what they do. Prefer declarative code that describes an operation through named steps and data transformations.
+- Decoupling is more important than DRY. Unrelated features should be changeable independently, even if they contain similar code. Share a function when changing the same rule would otherwise require updating several copies.
+- Endpoints validate requests, check access, call business operations, and format responses. Put business logic in named functions or service methods. Add a use-case function when several services need coordination.
+- Extract related state, effects, and event logic from large components into separate custom-hook functions named after their purpose. Keep calculations that do not use hooks in ordinary functions.
+- Store each piece of UI state once. Calculate dependent values instead of keeping copies synchronized. Use one `status` for mutually exclusive loading, success, and error states instead of separate booleans.
+- Receive required data and clients through arguments, constructors, or framework dependency injection. Avoid reading or changing mutable globals from business functions.
+- Keep a component's colors, typography, borders, padding, and visual states inside that component. Allow appearance changes only through semantic props such as `variant` and `size`. Parents position and space components with layouts or wrappers, without passing `className` or `style` to restyle them.
 
-## UI
+Remove unused code, obsolete fallbacks, and wrappers that forward calls without simplifying usage or hiding external-library details.
+Update every place that uses a function or component when changing its internal interface.
 
-Follow the project's component and styling conventions.
-Separate data loading, business decisions, and presentation. Keep state with its owner and convert server data at the boundary.
-Move appearance into components when requested or when the project uses this convention. Keep placement in surrounding layouts.
-Use semantic props for variants and states. Keep style overrides in documented layout, adapter, and low-level extension points.
-Preserve data flow, interactions, accessibility, states, and responsive behavior.
-Report human checks for affected states and screen sizes. Do not use a browser for visual checks.
+## Checks and review
 
-## Finish
+Run relevant existing tests before risky edits and affected checks afterwards.
+Add tests only for meaningful behavior risks; prefer simple integration tests against real endpoints and a test database where relevant.
+Delete tests that add no real value, including tests written just for the sake of having tests, cosmetic assertions, tests that restate the implementation, and duplicates that catch no additional failures. Preserve useful behavioral coverage.
 
-Read the final diff against the stated maintenance benefit. Rework or remove refactor changes that do not make the next task easier.
-Use existing checks for local mechanical edits without the risks above. Run loop-code-review for other changes, with the scope, contracts, and risks.
-Definition of Done: unchanged behavior, removal of the identified maintenance problem, and changes within scope.
-Report incomplete if required review is unavailable or remains open, or work is unfinished.
-Summarize what became easier, behavior checks, remaining risks, human checks, and review cost.
-Keep unrelated changes intact. Do not commit, push, deploy, or change shared data without authorization.
+Finish with `loop-code-review`, passing the refactoring scope and these criteria. Ask it to score the DX improvement and look for missed refactors, regressions, and overengineering. Fix accepted findings and require `passed`.
+If relevant checks fail or review cannot pass, report the refactor as incomplete.
+
+Report the DX improvement, checks, review score, discovered bugs, and remaining risks. Leave final visual verification to the user.
+Do not commit or push unless requested.
