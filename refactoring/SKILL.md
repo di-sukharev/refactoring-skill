@@ -33,8 +33,8 @@ Run relevant existing tests before risky edits and affected checks afterwards.
 Add tests only for meaningful behavior risks; prefer simple integration tests against real endpoints and a test database where relevant.
 Delete tests that add no real value, including tests written just for the sake of having tests, cosmetic assertions, tests that restate the implementation, and duplicates that catch no additional failures. Preserve useful behavioral coverage.
 
-Finish with `loop-code-review`, passing the refactoring scope and these criteria. Ask it to score the DX improvement and look for missed refactors, regressions, and overengineering. Fix accepted findings and require `passed`.
-If relevant checks fail or review cannot pass, report the refactor as incomplete.
+Finish with a fresh sub-agent: ask it to score the refactoring from 1 to 10 and report missed improvements and DX problems against these criteria. Fix DX problems and repeat with fresh sub-agents until none are reported, for at most five review rounds.
+If relevant checks fail or DX problems remain after the final round, report the refactor as incomplete.
 
 Report the DX improvement, checks, review score, discovered bugs, and remaining risks. Leave final visual verification to the user.
 Do not commit or push unless requested.
